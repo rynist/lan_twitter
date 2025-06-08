@@ -1,0 +1,30 @@
+body { font-family: system-ui, sans-serif; background-color: #f0f2f5; margin: 0; }
+.container { max-width: 600px; width: 100%; margin: 0 auto; background-color: #fff; min-height: 100vh; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+header, .tweet-form-container { padding: 15px; border-bottom: 1px solid #ddd; }
+h1, .view-header h2 { margin: 0; font-size: 20px; }
+.view-header { display: flex; align-items: center; gap: 15px; padding: 15px; border-bottom: 1px solid #ddd; }
+.back-button { font-size: 20px; text-decoration: none; color: #1c1e21; }
+#tweet-form { display: flex; flex-direction: column; gap: 10px; }
+#username-input, #tweet-text-input { border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 16px; font-family: inherit; }
+#tweet-text-input { min-height: 80px; resize: vertical; }
+#tweet-form button { background-color: #1DA1F2; color: white; border: none; padding: 10px 20px; border-radius: 9999px; font-weight: bold; font-size: 16px; cursor: pointer; align-self: flex-end; }
+#tweet-form button:hover { background-color: #0c85d0; }
+.tweet { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+.tweet:hover { background-color: #f5f8fa; }
+.tweet.parent-tweet { border-bottom: 10px solid #e1e8ed; cursor: default; }
+.tweet.parent-tweet:hover { background-color: #fff; }
+.tweet-header { font-weight: bold; }
+.tweet-text { margin-top: 5px; white-space: pre-wrap; word-wrap: break-word; }
+.tweet-meta { font-size: 0.9em; color: #657786; margin-top: 12px; }
+.tweet-actions { margin-top: 12px; display: flex; gap: 20px; }
+.action-button, .action-link { background: none; border: none; color: #657786; cursor: pointer; font-size: 14px; padding: 0; font-family: inherit; text-decoration: none; }
+.action-button:hover, .action-link:hover { text-decoration: underline; }
+.replying-to-info { font-size: 0.9em; color: #657786; margin-bottom: 4px; }
+.replying-to-info a { color: inherit; }
+.quoted-tweet-container { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin-top: 8px; cursor: pointer; }
+.quoted-tweet-container:hover { background-color: #f5f8fa; }
+.quoted-tweet-container .tweet-header, .quoted-tweet-container .tweet-text { font-size: 0.95em; }
+.quoted-tweet-container .tweet-timestamp { font-size: 0.8em; margin-top: 5px;}
+.quoted-tweet-container .tweet-text { margin-top: 3px; }
+#composer-context { padding: 0 15px 10px 15px; font-size: 0.9em; color: #657786; }
+#composer-context button { background: none; border: none; color: #1DA1F2; cursor: pointer; font-size: 1em; padding-left: 5px; }

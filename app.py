@@ -16,7 +16,6 @@ def save_tweets(tweets):
     with open(TWEETS_FILE, 'w') as f: json.dump(tweets, f, indent=2)
 
 def add_interaction_counts(tweets):
-    """Helper function to calculate and add reply/quote counts."""
     reply_counts = Counter(t['replying_to'] for t in tweets if t.get('replying_to'))
     quote_counts = Counter(t['quoting_tweet_id'] for t in tweets if t.get('quoting_tweet_id'))
     
@@ -47,10 +46,8 @@ def get_tweet_by_id(tweet_id):
     all_tweets = load_tweets()
     all_tweets_with_counts = add_interaction_counts(all_tweets)
     tweet = next((t for t in all_tweets_with_counts if t.get('id') == tweet_id), None)
-    if tweet:
-        return jsonify(tweet)
-    else:
-        return jsonify({'error': 'Tweet not found'}), 404
+    if tweet: return jsonify(tweet)
+    return jsonify({'error': 'Tweet not found'}), 404
 
 @app.route('/api/tweets', methods=['POST'])
 def post_tweet():
@@ -65,12 +62,29 @@ def post_tweet():
         'text': tweet_data['text'],
         'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
         'replying_to': tweet_data.get('replying_to', None),
-        'quoting_tweet_id': tweet_data.get('quoting_tweet_id', None)
+        'quoting_tweet_id': tweet_data.get('quoting_tweet_id', None),
+        'like_count': 0  # Add like_count on creation
     }
     
     tweets.append(new_tweet)
     save_tweets(tweets)
     return jsonify(new_tweet), 201
+
+@app.route('/api/tweets/<int:tweet_id>/like', methods=['POST'])
+def like_tweet(tweet_id):
+    """New endpoint to increment a tweet's like count."""
+    tweets = load_tweets()
+    tweet = next((t for t in tweets if t.get('id') == tweet_id), None)
+    
+    if not tweet:
+        return jsonify({'error': 'Tweet not found'}), 404
+    
+    tweet['like_count'] = tweet.get('like_count', 0) + 1
+    save_tweets(tweets)
+    
+    # Add interaction counts to the returned tweet for UI consistency
+    tweet_with_counts = add_interaction_counts([tweet])[0]
+    return jsonify(tweet_with_counts)
 
 @app.route('/')
 def serve_index():

@@ -140,16 +140,19 @@ if __name__ == "__main__":
     decision = parse_llm_decision(llm_response)
     
     if decision and 'ACTION' in decision and 'CONTENT' in decision:
-        action = decision['ACTION']
+        action = decision['ACTION'].strip().upper()
         post_payload = {"text": decision['CONTENT']}
 
         if action in ["REPLY", "QUOTE"] and 'ID' in decision:
             try:
                 target_id = int(decision['ID'])
-                if action == "REPLY":
-                    post_payload['replying_to'] = target_id
-                elif action == "QUOTE":
-                    post_payload['quoting_tweet_id'] = target_id
+                if target_id > 0:
+                    if action == "REPLY":
+                        post_payload['replying_to'] = target_id
+                    elif action == "QUOTE":
+                        post_payload['quoting_tweet_id'] = target_id
+                else:
+                    print("WARNING: ID must be a positive integer for replies or quotes. Posting as a new tweet instead.")
             except ValueError:
                 print(f"WARNING: Invalid ID '{decision['ID']}'. Posting as a new tweet instead.")
 

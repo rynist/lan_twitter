@@ -12,6 +12,8 @@ LAN_TWTTR_API_URL = "http://localhost:5001/api/tweets"
 
 PROMPT_DB_FILE = "prompts.db"
 
+DEFAULT_SYSTEM_PROMPT = """Here is the recent conversation:\n{context}\n\nYou must decide on one of three actions: TWEET, REPLY, or QUOTE.\nYour response MUST be in the following format, with each part on a new line:\nACTION: [Your chosen action: TWEET, REPLY, or QUOTE]\nID: [The ID of the tweet to REPLY or QUOTE. Use 0 for a new TWEET.]\nCONTENT: [The text of your tweet, reply, or quote. Must be under 280 characters.]\n\nExample for a reply:\nACTION: REPLY\nID: 3\nCONTENT: That's a fascinating point about ancient Rome!\n\nExample for a new tweet:\nACTION: TWEET\nID: 0\nCONTENT: Just learned that Vikings used sunstones for navigation. How cool is that?\n"""
+
 DEFAULT_PERSONAS = [
     (
         "TechOptimist",
@@ -39,6 +41,26 @@ def init_prompt_db():
         )
         """
     )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS system_prompt (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            instructions TEXT NOT NULL
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS token_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            prompt_tokens INTEGER,
+            completion_tokens INTEGER,
+            total_tokens INTEGER,
+            persona TEXT
+        )
+        """
+    )
     conn.commit()
     cur.execute("SELECT COUNT(*) FROM personas")
     if cur.fetchone()[0] == 0:
@@ -46,7 +68,23 @@ def init_prompt_db():
             "INSERT INTO personas (name, prompt) VALUES (?, ?)", DEFAULT_PERSONAS
         )
         conn.commit()
+    cur.execute("SELECT COUNT(*) FROM system_prompt")
+    if cur.fetchone()[0] == 0:
+        cur.execute(
+            "INSERT INTO system_prompt (id, instructions) VALUES (1, ?)",
+            (DEFAULT_SYSTEM_PROMPT,),
+        )
+        conn.commit()
     conn.close()
+
+
+def load_system_prompt():
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute("SELECT instructions FROM system_prompt WHERE id=1")
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else DEFAULT_SYSTEM_PROMPT
 
 
 def load_personas():
@@ -102,28 +140,8 @@ def get_llm_decision(persona, context):
         print("ERROR: OPENROUTER_API_KEY environment variable not set.")
         return None
 
-    system_prompt = f"""
-{persona['prompt']}
-
-Here is the recent conversation:
-{context}
-
-You must decide on one of three actions: TWEET, REPLY, or QUOTE.
-Your response MUST be in the following format, with each part on a new line:
-ACTION: [Your chosen action: TWEET, REPLY, or QUOTE]
-ID: [The ID of the tweet to REPLY or QUOTE. Use 0 for a new TWEET.]
-CONTENT: [The text of your tweet, reply, or quote. Must be under 280 characters.]
-
-Example for a reply:
-ACTION: REPLY
-ID: 3
-CONTENT: That's a fascinating point about ancient Rome!
-
-Example for a new tweet:
-ACTION: TWEET
-ID: 0
-CONTENT: Just learned that Vikings used sunstones for navigation. How cool is that?
-"""
+    instructions = load_system_prompt().format(context=context)
+    system_prompt = f"{persona['prompt']}\n\n{instructions}"
     
     print(f"Bot '{persona['name']}' is thinking...")
     try:

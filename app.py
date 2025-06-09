@@ -96,6 +96,7 @@ def get_tweet(tweet_id):
 def init_prompt_db():
     conn = sqlite3.connect(PROMPT_DB_FILE)
     cur = conn.cursor()
+    # Personas table
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS personas (
@@ -105,7 +106,18 @@ def init_prompt_db():
         )
         """
     )
+    # System prompt table with a single row
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS system_prompt (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            instructions TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
+
+    # Seed personas if empty
     cur.execute("SELECT COUNT(*) FROM personas")
     if cur.fetchone()[0] == 0:
         cur.executemany(
@@ -113,6 +125,16 @@ def init_prompt_db():
             DEFAULT_PERSONAS,
         )
         conn.commit()
+
+    # Ensure system prompt row exists
+    cur.execute("SELECT COUNT(*) FROM system_prompt")
+    if cur.fetchone()[0] == 0:
+        cur.execute(
+            "INSERT INTO system_prompt (id, instructions) VALUES (1, ?)",
+            (SYSTEM_INSTRUCTIONS,),
+        )
+        conn.commit()
+
     conn.close()
 
 def load_personas():
@@ -123,6 +145,26 @@ def load_personas():
     personas = [dict(row) for row in cur.fetchall()]
     conn.close()
     return personas
+
+def load_system_prompt():
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute("SELECT instructions FROM system_prompt WHERE id=1")
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else SYSTEM_INSTRUCTIONS
+
+def update_system_prompt_db(instructions):
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE system_prompt SET instructions=? WHERE id=1",
+        (instructions,),
+    )
+    conn.commit()
+    conn.close()
+    global SYSTEM_INSTRUCTIONS
+    SYSTEM_INSTRUCTIONS = instructions
 
 def increment_like(tweet_id):
     conn = sqlite3.connect(DB_FILE)
@@ -207,9 +249,70 @@ def like_tweet(tweet_id):
 def get_personas():
     return jsonify(load_personas())
 
+@app.route('/api/personas', methods=['POST'])
+def add_persona():
+    data = request.get_json()
+    if not data or 'name' not in data or 'prompt' not in data:
+        return jsonify({'error': 'Missing data'}), 400
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO personas (name, prompt) VALUES (?, ?)",
+            (data['name'], data['prompt']),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Persona already exists'}), 400
+    conn.close()
+    return jsonify({'status': 'added'}), 201
+
+@app.route('/api/personas/<string:name>', methods=['PUT'])
+def update_persona(name):
+    data = request.get_json()
+    if not data or 'name' not in data or 'prompt' not in data:
+        return jsonify({'error': 'Missing data'}), 400
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "UPDATE personas SET name=?, prompt=? WHERE name=?",
+            (data['name'], data['prompt'], name),
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Persona not found'}), 404
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'error': 'Persona with that name already exists'}), 400
+    conn.close()
+    return jsonify({'status': 'updated'})
+
+@app.route('/api/personas/<string:name>', methods=['DELETE'])
+def delete_persona(name):
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM personas WHERE name=?", (name,))
+    conn.commit()
+    if cur.rowcount == 0:
+        conn.close()
+        return jsonify({'error': 'Persona not found'}), 404
+    conn.close()
+    return jsonify({'status': 'deleted'})
+
 @app.route('/api/system_prompt', methods=['GET'])
 def get_system_prompt():
-    return jsonify({'system_prompt': SYSTEM_INSTRUCTIONS})
+    return jsonify({'system_prompt': load_system_prompt()})
+
+@app.route('/api/system_prompt', methods=['POST'])
+def set_system_prompt():
+    data = request.get_json()
+    if not data or 'system_prompt' not in data:
+        return jsonify({'error': 'Missing data'}), 400
+    update_system_prompt_db(data['system_prompt'])
+    return jsonify({'status': 'updated'})
 
 @app.route('/')
 def serve_index():
@@ -226,6 +329,7 @@ def serve_static(path):
 # Ensure the database schema exists when the application starts
 init_db()
 init_prompt_db()
+SYSTEM_INSTRUCTIONS = load_system_prompt()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

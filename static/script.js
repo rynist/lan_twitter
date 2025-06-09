@@ -9,7 +9,7 @@
             window.addEventListener('hashchange', () => this.router());
             this.router();
             // Refresh the view periodically to show new tweets
-            setInterval(() => this.router(), 5000);
+            setInterval(() => this.router(), 1000);
         },
         
         async router() {
@@ -78,6 +78,7 @@
                         <textarea id="tweet-text-input" placeholder="What's happening?" required maxlength="280"></textarea>
                         <div class="button-row">
                             <button type="button" id="run-bot-btn">Run Bot</button>
+                            <button type="button" id="run-bot-five-btn">Run Bot 5x</button>
                             <button type="submit">Tweet</button>
                         </div>
                     </form>
@@ -103,6 +104,8 @@
             }
             const runBotBtn = document.getElementById('run-bot-btn');
             if (runBotBtn) runBotBtn.addEventListener('click', () => this.runBot());
+            const runBotFiveBtn = document.getElementById('run-bot-five-btn');
+            if (runBotFiveBtn) runBotFiveBtn.addEventListener('click', () => this.runBotFive());
         },
 
         async handleMainClick(e) {
@@ -135,6 +138,11 @@
 
         async handleFormSubmit(e) { e.preventDefault(); const usernameInput = document.getElementById('username-input'); const username = usernameInput.value.trim(); const text = document.getElementById('tweet-text-input').value.trim(); if (!username || !text) return; const payload = { username, text }; if (this.state.composer.replying_to) payload.replying_to = parseInt(this.state.composer.replying_to.id); await fetch('/api/tweets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), }); localStorage.setItem('lanTwttrUsername', username); this.state.lastUsername = username; this.router(); },
         async runBot() { await fetch('/api/run_bot', { method: 'POST' }); },
+        runBotFive() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => this.runBot(), i * 2000);
+            }
+        },
         handleKeyDown(e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); document.getElementById('tweet-form').requestSubmit(); } }
     };
 

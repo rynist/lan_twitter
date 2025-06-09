@@ -8,6 +8,8 @@
             this.state.lastUsername = localStorage.getItem('lanTwttrUsername') || '';
             window.addEventListener('hashchange', () => this.router());
             this.router();
+            // Refresh the view periodically to show new tweets
+            setInterval(() => this.router(), 5000);
         },
         
         async router() {
@@ -69,7 +71,14 @@
         },
 
         getComposerHTML() { /* Unchanged from previous version */ return `<div id="composer-context"></div><div class="tweet-form-container"><form id="tweet-form"><input type="text" id="username-input" placeholder="Your Username" value="${this.state.lastUsername}" required><textarea id="tweet-text-input" placeholder="What's happening?" required maxlength="280"></textarea><button type="submit">Tweet</button></form></div>`; },
-        renderMainFeed(tweets) { const topLevelTweets = tweets.filter(t => !t.replying_to); this.elements.mainContent.innerHTML = `<header><h1>LAN Twitter</h1></header>${this.getComposerHTML()}<div id="tweet-feed">${topLevelTweets.map(t => this.getTweetHTML(t)).join('')}</div>`; },
+        renderMainFeed(tweets) {
+            this.elements.mainContent.innerHTML = `
+                <header><h1>LAN Twitter</h1></header>
+                ${this.getComposerHTML()}
+                <div id="tweet-feed">
+                    ${tweets.map(t => this.getTweetHTML(t)).join('')}
+                </div>`;
+        },
         renderTweetDetailView(tweetId, tweets) { const parentTweet = this.state.allTweetsById[tweetId]; if (!parentTweet) { this.elements.mainContent.innerHTML = `<h2>Tweet not found</h2><a href="#">Back</a>`; return; } const replies = tweets.filter(t => t.replying_to === parentTweet.id); this.elements.mainContent.innerHTML = `<div class="view-header"><a href="#" class="back-button">←</a><h2>Thread</h2></div><div id="tweet-feed">${this.getTweetHTML(parentTweet, true)}${replies.map(t => this.getTweetHTML(t)).join('')}</div>${this.getComposerHTML()}`; this.state.composer = { replying_to: { id: parentTweet.id, username: parentTweet.username }, quoting: null }; document.getElementById('composer-context').innerHTML = `Replying to @${parentTweet.username} <button id="cancel-action">Cancel</button>`; },
         renderQuotesView(tweetId, tweets) { const parentTweet = this.state.allTweetsById[tweetId]; if (!parentTweet) { this.elements.mainContent.innerHTML = `<h2>Tweet not found</h2><a href="#">Back</a>`; return; } const quotes = tweets.filter(t => t.quoting_tweet_id === parentTweet.id); this.elements.mainContent.innerHTML = `<div class="view-header"><a href="#/tweet/${tweetId}" class="back-button">←</a><h2>Quotes for Tweet by @${parentTweet.username}</h2></div><div id="tweet-feed">${quotes.map(t => this.getTweetHTML(t)).join('')}</div>`; },
 

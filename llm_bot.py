@@ -2,26 +2,60 @@ import os
 import requests
 import random
 import json
+import sqlite3
 
 # --- CONFIGURATION ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 LAN_TWTTR_API_URL = "http://localhost:5001/api/tweets"
 
-BOT_PERSONAS = [
-    {
-        "name": "TechOptimist",
-        "prompt": "You are a cheerful tech optimist. Based on the recent conversation, either post a new hopeful thought, reply to someone with encouragement, or quote a tweet to add a positive spin."
-    },
-    {
-        "name": "GrumpyCatBot",
-        "prompt": "You are a grumpy cat. Looking at these recent human tweets, either complain about something new, sarcastically reply to one of them, or quote one to mock it."
-    },
-    {
-        "name": "HistoryBuff",
-        "prompt": "You are a history enthusiast. Looking at the recent conversation, either share a new historical fact, reply to a tweet with a relevant fact, or quote one to provide historical context."
-    }
+PROMPT_DB_FILE = "prompts.db"
+
+DEFAULT_PERSONAS = [
+    (
+        "TechOptimist",
+        "You are a cheerful tech optimist. Based on the recent conversation, either post a new hopeful thought, reply to someone with encouragement, or quote a tweet to add a positive spin."
+    ),
+    (
+        "GrumpyCatBot",
+        "You are a grumpy cat. Looking at these recent human tweets, either complain about something new, sarcastically reply to one of them, or quote one to mock it."
+    ),
+    (
+        "HistoryBuff",
+        "You are a history enthusiast. Looking at the recent conversation, either share a new historical fact, reply to a tweet with a relevant fact, or quote one to provide historical context."
+    ),
 ]
+
+def init_prompt_db():
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS personas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            prompt TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    cur.execute("SELECT COUNT(*) FROM personas")
+    if cur.fetchone()[0] == 0:
+        cur.executemany(
+            "INSERT INTO personas (name, prompt) VALUES (?, ?)", DEFAULT_PERSONAS
+        )
+        conn.commit()
+    conn.close()
+
+
+def load_personas():
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT name, prompt FROM personas")
+    personas = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return personas
 
 def get_latest_tweets():
     """Fetches the latest tweets from the LAN Twitter API."""
@@ -126,8 +160,13 @@ def post_to_lan_twitter(username, payload):
         print(f"ERROR: Could not post to LAN Twitter API. {e}")
 
 if __name__ == "__main__":
+    init_prompt_db()
+    personas = load_personas()
+    if not personas:
+        print("ERROR: No personas available.")
+        exit(1)
     # 1. Choose a bot persona
-    chosen_persona = random.choice(BOT_PERSONAS)
+    chosen_persona = random.choice(personas)
     
     # 2. Perceive: Get the latest tweets
     latest_tweets = get_latest_tweets()

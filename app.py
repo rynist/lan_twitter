@@ -2,6 +2,8 @@
 import datetime
 import sqlite3
 from flask import Flask, request, jsonify, send_from_directory
+from threading import Thread
+import llm_bot
 from collections import Counter
 
 PROMPT_DB_FILE = 'prompts.db'
@@ -355,6 +357,13 @@ def set_system_prompt():
 @app.route('/api/token_usage', methods=['GET'])
 def get_token_usage():
     return jsonify(load_token_usage())
+
+
+@app.route('/api/run_bot', methods=['POST'])
+def trigger_bot():
+    """Start a single LLM bot cycle in a background thread."""
+    Thread(target=llm_bot.run_bot).start()
+    return jsonify({'status': 'running'}), 202
 
 @app.route('/')
 def serve_index():

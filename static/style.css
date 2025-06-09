@@ -8,8 +8,11 @@ h1, .view-header h2 { margin: 0; font-size: 20px; }
 #tweet-form { display: flex; flex-direction: column; gap: 10px; }
 #username-input, #tweet-text-input { border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-size: 16px; font-family: inherit; }
 #tweet-text-input { min-height: 80px; resize: vertical; }
-#tweet-form button { background-color: #1DA1F2; color: white; border: none; padding: 10px 20px; border-radius: 9999px; font-weight: bold; font-size: 16px; cursor: pointer; align-self: flex-end; }
+#tweet-form button { background-color: #1DA1F2; color: white; border: none; padding: 10px 20px; border-radius: 9999px; font-weight: bold; font-size: 16px; cursor: pointer; }
 #tweet-form button:hover { background-color: #0c85d0; }
+.button-row { display: flex; gap: 10px; justify-content: flex-end; }
+#run-bot-btn { background-color: #6c757d; }
+#run-bot-btn:hover { background-color: #5a6268; }
 .tweet { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
 .tweet:hover { background-color: #f5f8fa; }
 .tweet.parent-tweet { border-bottom: 10px solid #e1e8ed; cursor: default; }

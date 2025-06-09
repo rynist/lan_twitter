@@ -61,11 +61,10 @@
                     ${quotedTweetHTML}
                     <p class="tweet-meta">${this.formatDate(tweet.timestamp)}</p>
                     <div class="tweet-actions">
-                        <button class="action-button reply-btn" data-tweet-id="${tweet.id}" data-username="${tweet.username}">
-                            Reply ${replyCount}
-                        </button>
+                        <button class="action-button reply-btn" data-tweet-id="${tweet.id}" data-username="${tweet.username}">Reply ${replyCount}</button>
                         <a href="#/tweet/${tweet.id}/quotes" class="action-link quote-btn">Quote ${quoteCount}</a>
                         <button class="action-button like-btn" data-tweet-id="${tweet.id}">Like ${likeCount}</button>
+                        <button class="action-button delete-btn" data-tweet-id="${tweet.id}">Delete</button>
                     </div>
                 </div>`;
         },
@@ -73,7 +72,7 @@
         getComposerHTML() { /* Unchanged from previous version */ return `<div id="composer-context"></div><div class="tweet-form-container"><form id="tweet-form"><input type="text" id="username-input" placeholder="Your Username" value="${this.state.lastUsername}" required><textarea id="tweet-text-input" placeholder="What's happening?" required maxlength="280"></textarea><button type="submit">Tweet</button></form></div>`; },
         renderMainFeed(tweets) {
             this.elements.mainContent.innerHTML = `
-                <header><h1>LAN Twitter</h1></header>
+                <header><h1>LAN Twitter</h1><a href="prompts.html" class="prompts-link">Prompts</a></header>
                 ${this.getComposerHTML()}
                 <div id="tweet-feed">
                     ${tweets.map(t => this.getTweetHTML(t)).join('')}
@@ -97,6 +96,12 @@
                 this.state.allTweetsById[tweetId] = updatedTweet; // Update local cache
                 this.router(); // Re-render to show new count
                 return; // Stop further processing
+            }
+
+            if (target.classList.contains('delete-btn')) {
+                await fetch(`/api/tweets/${tweetId}`, { method: 'DELETE' });
+                this.router();
+                return;
             }
 
             if (target.closest('.tweet:not(.parent-tweet)') && !target.closest('.action-button, .action-link') && !target.closest('a')) { window.location.hash = `#/tweet/${tweetId}`; } 

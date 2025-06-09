@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 tweets.json
 tweets.db
+prompts.db

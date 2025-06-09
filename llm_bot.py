@@ -145,13 +145,15 @@ def get_llm_decision(persona, context):
     
     print(f"Bot '{persona['name']}' is thinking...")
     try:
+        payload = {
+            "model": "openai/gpt-4o-mini",
+            "messages": [{"role": "user", "content": system_prompt}]
+        }
+        print(f"-> LLM Request:\n{json.dumps(payload, indent=2)}")
         response = requests.post(
             url=OPENROUTER_API_URL,
             headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}"},
-            json={
-                "model": "mistralai/mistral-7b-instruct:free",
-                "messages": [{"role": "user", "content": system_prompt}]
-            }
+            json=payload
         )
         response.raise_for_status()
         data = response.json()

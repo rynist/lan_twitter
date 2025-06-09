@@ -69,7 +69,20 @@
                 </div>`;
         },
 
-        getComposerHTML() { /* Unchanged from previous version */ return `<div id="composer-context"></div><div class="tweet-form-container"><form id="tweet-form"><input type="text" id="username-input" placeholder="Your Username" value="${this.state.lastUsername}" required><textarea id="tweet-text-input" placeholder="What's happening?" required maxlength="280"></textarea><button type="submit">Tweet</button></form></div>`; },
+        getComposerHTML() {
+            return `
+                <div id="composer-context"></div>
+                <div class="tweet-form-container">
+                    <form id="tweet-form">
+                        <input type="text" id="username-input" placeholder="Your Username" value="${this.state.lastUsername}" required>
+                        <textarea id="tweet-text-input" placeholder="What's happening?" required maxlength="280"></textarea>
+                        <div class="button-row">
+                            <button type="button" id="run-bot-btn">Run Bot</button>
+                            <button type="submit">Tweet</button>
+                        </div>
+                    </form>
+                </div>`;
+        },
         renderMainFeed(tweets) {
             this.elements.mainContent.innerHTML = `
                 <header><h1>LAN Twitter</h1><a href="prompts.html" class="prompts-link">Prompts</a> <a href="tokens.html" class="prompts-link">Usage</a></header>
@@ -81,7 +94,16 @@
         renderTweetDetailView(tweetId, tweets) { const parentTweet = this.state.allTweetsById[tweetId]; if (!parentTweet) { this.elements.mainContent.innerHTML = `<h2>Tweet not found</h2><a href="#">Back</a>`; return; } const replies = tweets.filter(t => t.replying_to === parentTweet.id); this.elements.mainContent.innerHTML = `<div class="view-header"><a href="#" class="back-button">←</a><h2>Thread</h2></div><div id="tweet-feed">${this.getTweetHTML(parentTweet, true)}${replies.map(t => this.getTweetHTML(t)).join('')}</div>${this.getComposerHTML()}`; this.state.composer = { replying_to: { id: parentTweet.id, username: parentTweet.username }, quoting: null }; document.getElementById('composer-context').innerHTML = `Replying to @${parentTweet.username} <button id="cancel-action">Cancel</button>`; },
         renderQuotesView(tweetId, tweets) { const parentTweet = this.state.allTweetsById[tweetId]; if (!parentTweet) { this.elements.mainContent.innerHTML = `<h2>Tweet not found</h2><a href="#">Back</a>`; return; } const quotes = tweets.filter(t => t.quoting_tweet_id === parentTweet.id); this.elements.mainContent.innerHTML = `<div class="view-header"><a href="#/tweet/${tweetId}" class="back-button">←</a><h2>Quotes for Tweet by @${parentTweet.username}</h2></div><div id="tweet-feed">${quotes.map(t => this.getTweetHTML(t)).join('')}</div>`; },
 
-        attachEventListeners() { this.elements.mainContent.addEventListener('click', e => this.handleMainClick(e)); const tweetForm = document.getElementById('tweet-form'); if (tweetForm) { tweetForm.addEventListener('submit', e => this.handleFormSubmit(e)); document.getElementById('tweet-text-input').addEventListener('keydown', e => this.handleKeyDown(e)); } },
+        attachEventListeners() {
+            this.elements.mainContent.addEventListener('click', e => this.handleMainClick(e));
+            const tweetForm = document.getElementById('tweet-form');
+            if (tweetForm) {
+                tweetForm.addEventListener('submit', e => this.handleFormSubmit(e));
+                document.getElementById('tweet-text-input').addEventListener('keydown', e => this.handleKeyDown(e));
+            }
+            const runBotBtn = document.getElementById('run-bot-btn');
+            if (runBotBtn) runBotBtn.addEventListener('click', () => this.runBot());
+        },
 
         async handleMainClick(e) {
             const target = e.target;
@@ -112,6 +134,7 @@
         },
 
         async handleFormSubmit(e) { e.preventDefault(); const usernameInput = document.getElementById('username-input'); const username = usernameInput.value.trim(); const text = document.getElementById('tweet-text-input').value.trim(); if (!username || !text) return; const payload = { username, text }; if (this.state.composer.replying_to) payload.replying_to = parseInt(this.state.composer.replying_to.id); await fetch('/api/tweets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), }); localStorage.setItem('lanTwttrUsername', username); this.state.lastUsername = username; this.router(); },
+        async runBot() { await fetch('/api/run_bot', { method: 'POST' }); },
         handleKeyDown(e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); document.getElementById('tweet-form').requestSubmit(); } }
     };
 

@@ -184,25 +184,28 @@ def post_to_lan_twitter(username, payload):
     except requests.exceptions.RequestException as e:
         print(f"ERROR: Could not post to LAN Twitter API. {e}")
 
-if __name__ == "__main__":
+
+def run_bot():
+    """Run a single LLM bot cycle."""
     init_prompt_db()
     personas = load_personas()
     if not personas:
         print("ERROR: No personas available.")
-        exit(1)
+        return
+
     # 1. Choose a bot persona
     chosen_persona = random.choice(personas)
-    
+
     # 2. Perceive: Get the latest tweets
     latest_tweets = get_latest_tweets()
     context_str = format_context_for_llm(latest_tweets)
-    
+
     # 3. Decide: Get a decision from the LLM
     llm_response = get_llm_decision(chosen_persona, context_str)
-    
+
     # 4. Act: Parse the decision and post accordingly
     decision = parse_llm_decision(llm_response)
-    
+
     if decision and 'ACTION' in decision and 'CONTENT' in decision:
         action = decision['ACTION'].strip().upper()
         post_payload = {"text": decision['CONTENT']}
@@ -216,10 +219,18 @@ if __name__ == "__main__":
                     elif action == "QUOTE":
                         post_payload['quoting_tweet_id'] = target_id
                 else:
-                    print("WARNING: ID must be a positive integer for replies or quotes. Posting as a new tweet instead.")
+                    print(
+                        "WARNING: ID must be a positive integer for replies or quotes. "
+                        "Posting as a new tweet instead."
+                    )
             except ValueError:
-                print(f"WARNING: Invalid ID '{decision['ID']}'. Posting as a new tweet instead.")
+                print(
+                    f"WARNING: Invalid ID '{decision['ID']}'. Posting as a new tweet instead."
+                )
 
         post_to_lan_twitter(chosen_persona['name'], post_payload)
     else:
         print("Could not execute a valid action based on LLM response.")
+
+if __name__ == "__main__":
+    run_bot()

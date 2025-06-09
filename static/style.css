@@ -36,3 +36,7 @@ h1, .view-header h2 { margin: 0; font-size: 20px; }
 #persona-list button { margin-left: 10px; }
 #add-persona-btn, #save-system-prompt { margin: 10px 0; padding: 8px 12px; }
 #system-prompt-input { border: 1px solid #ccc; border-radius: 6px; padding: 10px; font-family: inherit; }
+
+/* Token usage page */
+#usage-list { list-style: none; padding: 0; }
+#usage-list li { padding: 10px; border-bottom: 1px solid #eee; }

@@ -72,7 +72,7 @@
         getComposerHTML() { /* Unchanged from previous version */ return `<div id="composer-context"></div><div class="tweet-form-container"><form id="tweet-form"><input type="text" id="username-input" placeholder="Your Username" value="${this.state.lastUsername}" required><textarea id="tweet-text-input" placeholder="What's happening?" required maxlength="280"></textarea><button type="submit">Tweet</button></form></div>`; },
         renderMainFeed(tweets) {
             this.elements.mainContent.innerHTML = `
-                <header><h1>LAN Twitter</h1><a href="prompts.html" class="prompts-link">Prompts</a></header>
+                <header><h1>LAN Twitter</h1><a href="prompts.html" class="prompts-link">Prompts</a> <a href="tokens.html" class="prompts-link">Usage</a></header>
                 ${this.getComposerHTML()}
                 <div id="tweet-feed">
                     ${tweets.map(t => this.getTweetHTML(t)).join('')}

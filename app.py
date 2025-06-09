@@ -115,6 +115,19 @@ def init_prompt_db():
         )
         """
     )
+    # Table to log LLM token usage
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS token_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            prompt_tokens INTEGER,
+            completion_tokens INTEGER,
+            total_tokens INTEGER,
+            persona TEXT
+        )
+        """
+    )
     conn.commit()
 
     # Seed personas if empty
@@ -165,6 +178,31 @@ def update_system_prompt_db(instructions):
     conn.close()
     global SYSTEM_INSTRUCTIONS
     SYSTEM_INSTRUCTIONS = instructions
+
+def log_token_usage(prompt_tokens, completion_tokens, total_tokens, persona):
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO token_usage (timestamp, prompt_tokens, completion_tokens, total_tokens, persona) VALUES (?, ?, ?, ?, ?)",
+        (
+            datetime.datetime.utcnow().isoformat() + 'Z',
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+            persona,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+def load_token_usage():
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT timestamp, prompt_tokens, completion_tokens, total_tokens, persona FROM token_usage ORDER BY id DESC")
+    rows = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return rows
 
 def increment_like(tweet_id):
     conn = sqlite3.connect(DB_FILE)
@@ -314,6 +352,10 @@ def set_system_prompt():
     update_system_prompt_db(data['system_prompt'])
     return jsonify({'status': 'updated'})
 
+@app.route('/api/token_usage', methods=['GET'])
+def get_token_usage():
+    return jsonify(load_token_usage())
+
 @app.route('/')
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
@@ -321,6 +363,10 @@ def serve_index():
 @app.route('/prompts')
 def serve_prompts():
     return send_from_directory(app.static_folder, 'prompts.html')
+
+@app.route('/tokens')
+def serve_tokens():
+    return send_from_directory(app.static_folder, 'tokens.html')
 
 @app.route('/<path:path>')
 def serve_static(path):

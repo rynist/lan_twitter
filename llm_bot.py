@@ -3,6 +3,7 @@ import requests
 import random
 import json
 import sqlite3
+import datetime
 
 # --- CONFIGURATION ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -56,6 +57,22 @@ def load_personas():
     personas = [dict(row) for row in cur.fetchall()]
     conn.close()
     return personas
+
+def log_token_usage(prompt_tokens, completion_tokens, total_tokens, persona):
+    conn = sqlite3.connect(PROMPT_DB_FILE)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO token_usage (timestamp, prompt_tokens, completion_tokens, total_tokens, persona) VALUES (?, ?, ?, ?, ?)",
+        (
+            datetime.datetime.utcnow().isoformat() + 'Z',
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+            persona,
+        ),
+    )
+    conn.commit()
+    conn.close()
 
 def get_latest_tweets():
     """Fetches the latest tweets from the LAN Twitter API."""
@@ -121,6 +138,14 @@ CONTENT: Just learned that Vikings used sunstones for navigation. How cool is th
         response.raise_for_status()
         data = response.json()
         decision_text = data['choices'][0]['message']['content'].strip()
+        if 'usage' in data:
+            usage = data['usage']
+            log_token_usage(
+                usage.get('prompt_tokens'),
+                usage.get('completion_tokens'),
+                usage.get('total_tokens'),
+                persona['name'],
+            )
         print(f"-> LLM Decision:\n{decision_text}")
         return decision_text
     except Exception as e:

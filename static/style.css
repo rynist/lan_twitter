@@ -1,7 +1,8 @@
 body { font-family: system-ui, sans-serif; background-color: #f0f2f5; margin: 0; }
 .container { max-width: 600px; width: 100%; margin: 0 auto; background-color: #fff; min-height: 100vh; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
-header, .tweet-form-container { padding: 15px; border-bottom: 1px solid #ddd; }
+header, .tweet-form-container { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
 h1, .view-header h2 { margin: 0; font-size: 20px; }
+.prompts-link { text-decoration: none; color: #1DA1F2; font-size: 14px; }
 .view-header { display: flex; align-items: center; gap: 15px; padding: 15px; border-bottom: 1px solid #ddd; }
 .back-button { font-size: 20px; text-decoration: none; color: #1c1e21; }
 #tweet-form { display: flex; flex-direction: column; gap: 10px; }
